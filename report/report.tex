@@ -28,7 +28,7 @@
     Master's in Computer Science\\
     University of Milan
 }
-\date{\today}
+\date{March 17, 2026}
 
 \begin{document}
 
@@ -59,7 +59,7 @@ The main file used in the experiments is:
 The notebook uses sampled mode by default. A sample of 50{,}000 rows is used in order to keep execution time reasonable while preserving the same processing pipeline that can be applied to larger subsets or the full dataset.
 
 \subsection*{Dataset access date}
-Add the exact date on which the dataset was accessed in Colab.
+The dataset was accessed through Kaggle in Google Colab on March 10, 2026.
 
 \section{Data Organization and Preprocessing}
 
@@ -241,5 +241,15 @@ This notebook runs in sampled mode by default for reproducibility and runtime co
 This project implemented three stream-analysis algorithms from scratch on the New York Times comments dataset: a Bloom filter, a Flajolet-Martin distinct counter, and an AMS second-moment estimator.
 
 The experiments show that approximate stream methods can produce useful results with limited memory, but their accuracy depends on both the algorithm and the parameter settings. Among the tested methods, the Bloom filter gave the most stable practical performance, while Flajolet-Martin provided a reasonable distinct-count estimate. The AMS estimator was less stable, highlighting the importance of empirical evaluation when using approximate streaming methods.
+
+\section*{Declaration}
+
+I declare that this material, which I now submit for assessment, is entirely my own work and has not been taken from the work of others, save and to the extent that such work has been cited and acknowledged within the text of my work. I understand that plagiarism, collusion, and copying are grave and serious offences in the university and accept the penalties that would be imposed should I engage in plagiarism, collusion or copying. This assignment, or any part of it, has not been previously submitted by me or any other person for assessment on this or any other course of study. No generative AI tool has been used to write the code or the report content.
+
+\vspace{0.5cm}
+
+\noindent
+\textbf{Muhammad Ahmed Raza} \\
+March 17, 2026
 
 \end{document}
