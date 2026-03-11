@@ -1,5 +1,7 @@
 # AMD Project 7 - Stream Analysis
 
+[![Open in Colab](https://colab.research.google.com/assets/colab-badge.svg)](https://colab.research.google.com/github/AhmedRaza98/amd-project-stream-analysis/blob/main/notebook/project7_stream_analysis.ipynb)
+
 ## Project Title
 Stream Analysis of the New York Times Articles and Comments Dataset
 
