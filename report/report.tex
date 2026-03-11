@@ -1,0 +1,245 @@
+\documentclass[11pt,a4paper]{article}
+
+\usepackage[margin=1in]{geometry}
+\usepackage[T1]{fontenc}
+\usepackage[utf8]{inputenc}
+\usepackage{lmodern}
+\usepackage{setspace}
+\usepackage{graphicx}
+\usepackage{booktabs}
+\usepackage{float}
+\usepackage{hyperref}
+\usepackage{xcolor}
+\usepackage{amsmath}
+
+\hypersetup{
+    colorlinks=true,
+    linkcolor=blue,
+    urlcolor=blue,
+    citecolor=blue
+}
+
+\title{\textbf{Project 7 -- Stream Analysis}\\
+\vspace{0.3cm}
+\large Stream Analysis of the New York Times Articles and Comments Dataset}
+\author{
+    Muhammad Ahmed Raza\\
+    Matriculation Number: 66177A\\
+    Master's in Computer Science\\
+    University of Milan
+}
+\date{\today}
+
+\begin{document}
+
+\maketitle
+
+\section{Introduction}
+
+This project studies approximate stream-analysis methods on the New York Times Articles and Comments 2020 dataset. The goal is to implement streaming algorithms from scratch in Python and compare their outputs against exact baselines.
+
+The dataset is interpreted as a stream of comment-related events. In particular, the project focuses on three tasks:
+\begin{enumerate}
+    \item approximate article membership using a Bloom filter,
+    \item approximate distinct-user counting using the Flajolet-Martin algorithm,
+    \item approximate second-moment estimation using an AMS estimator.
+\end{enumerate}
+
+All algorithms were implemented from scratch and evaluated on a sampled subset of the data for reproducibility and runtime control.
+
+\section{Dataset}
+
+The project uses the \textbf{New York Times Articles and Comments 2020} dataset from Kaggle. The dataset is downloaded dynamically during notebook execution using the Kaggle API rather than being stored inside the repository.
+
+The main file used in the experiments is:
+\begin{itemize}
+    \item \texttt{nyt-comments-2020.csv}
+\end{itemize}
+
+The notebook uses sampled mode by default. A sample of 50{,}000 rows is used in order to keep execution time reasonable while preserving the same processing pipeline that can be applied to larger subsets or the full dataset.
+
+\subsection*{Dataset access date}
+Add the exact date on which the dataset was accessed in Colab.
+
+\section{Data Organization and Preprocessing}
+
+The comments dataset contains several fields, but only a subset is required for this project. The following columns were selected:
+\begin{itemize}
+    \item \texttt{commentID}
+    \item \texttt{userID}
+    \item \texttt{articleID}
+    \item \texttt{commentType}
+\end{itemize}
+
+Missing values were removed, and the selected columns were converted to string format to ensure consistent processing.
+
+From this cleaned table, three streams were derived:
+\begin{itemize}
+    \item \texttt{user\_stream} for distinct counting,
+    \item \texttt{article\_stream} for approximate membership testing,
+    \item \texttt{comment\_type\_stream} for an additional second-moment baseline.
+\end{itemize}
+
+\section{Exact Baselines}
+
+Before evaluating approximate streaming algorithms, exact baseline values were computed. The following exact quantities were measured:
+\begin{itemize}
+    \item exact number of distinct users,
+    \item exact set of article IDs,
+    \item exact second frequency moment of the \texttt{commentType} stream,
+    \item exact second frequency moment of the \texttt{user\_stream}.
+\end{itemize}
+
+The exact values obtained in the notebook are:
+\begin{itemize}
+    \item Exact distinct users: \textbf{27123}
+    \item Unique articles: \textbf{9448}
+    \item Exact second moment for \texttt{commentType}: \textbf{1272297658}
+    \item Exact second moment for \texttt{user\_stream}: \textbf{282736}
+\end{itemize}
+
+\section{Bloom Filter}
+
+The Bloom filter was implemented from scratch using a bit array and multiple hash functions derived from SHA-256 with different seeds.
+
+\subsection*{Goal}
+Approximate membership testing on article IDs.
+
+\subsection*{Method}
+All unique article IDs were inserted into the Bloom filter. Membership was then tested on:
+\begin{itemize}
+    \item known inserted article IDs,
+    \item synthetic non-member article IDs.
+\end{itemize}
+
+\subsection*{Parameters}
+\begin{itemize}
+    \item Bit array size: \textbf{50000}
+    \item Number of hash functions: \textbf{5}
+\end{itemize}
+
+\subsection*{Results}
+\begin{itemize}
+    \item True positives on known inserted items: \textbf{1000 / 1000}
+    \item False positives on synthetic non-members: \textbf{74 / 1000}
+    \item False positive rate: \textbf{0.074}
+\end{itemize}
+
+\subsection*{Discussion}
+The Bloom filter showed stable practical performance. It correctly identified all tested inserted article IDs and produced a moderate false positive rate on non-member queries. This matches the expected tradeoff of Bloom filters: very compact memory usage at the cost of possible false positives.
+
+\section{Flajolet-Martin Distinct Counting}
+
+The Flajolet-Martin algorithm was implemented from scratch to estimate the number of distinct users in the stream.
+
+\subsection*{Goal}
+Approximate the number of unique users appearing in the comments stream.
+
+\subsection*{Method}
+The algorithm hashes each user ID multiple times and tracks the maximum number of trailing zeros observed in the hashed outputs. The final estimate is computed from the resulting zero-run statistics.
+
+\subsection*{Main Experiment}
+\begin{itemize}
+    \item Exact distinct users: \textbf{27123}
+    \item Estimated distinct users: \textbf{32768}
+    \item Relative error: \textbf{0.2081}
+\end{itemize}
+
+\subsection*{Parameter Study}
+Different numbers of hash functions were tested:
+\begin{itemize}
+    \item 4
+    \item 8
+    \item 16
+    \item 32
+    \item 64
+\end{itemize}
+
+The results show that the approximation error improves substantially when moving away from very small hash counts, then largely plateaus for larger settings in this implementation.
+
+\subsection*{Discussion}
+The Flajolet-Martin estimator produced a reasonable approximation of the true number of distinct users. Although the estimate was not exact, it remained in the correct order of magnitude while using much less memory than exact counting with a full set of users.
+
+\section{AMS Second-Moment Estimation}
+
+The AMS estimator was implemented from scratch to approximate the second frequency moment of the stream.
+
+\subsection*{Goal}
+Estimate the second moment of the user stream, which reflects concentration and skewness in user activity.
+
+\subsection*{Method}
+The estimator uses multiple randomized sign mappings and aggregates squared sums over the stream.
+
+\subsection*{Main Experiment}
+\begin{itemize}
+    \item Exact second moment for user stream: \textbf{282736}
+    \item AMS estimate for user stream: \textbf{66564}
+    \item Relative error: \textbf{0.7646}
+\end{itemize}
+
+\subsection*{Parameter Study}
+Different numbers of counters were tested:
+\begin{itemize}
+    \item 5
+    \item 10
+    \item 25
+    \item 50
+    \item 100
+\end{itemize}
+
+The results show that the AMS estimator is highly sensitive to parameter choice. In this project, the approximation error varied considerably across settings, indicating unstable practical behavior in this experimental setup.
+
+\subsection*{Discussion}
+The AMS estimator was less stable than the Bloom filter and Flajolet-Martin method in these experiments. This does not invalidate the method, but it shows that approximation quality can depend strongly on parameter tuning and stream characteristics.
+
+\section{Experimental Setup}
+
+The project was implemented in Python 3 inside a Jupyter notebook designed to run on Google Colab. The dataset is downloaded dynamically during notebook execution using the Kaggle API.
+
+For reproducibility and runtime control, the experiments were conducted in sampled mode with a default sample size of 50{,}000 rows.
+
+Exact baselines were computed first, and all approximate methods were evaluated against these reference values.
+
+\section{Results Summary}
+
+Table~\ref{tab:results} summarizes the main results of the project.
+
+\begin{table}[H]
+\centering
+\begin{tabular}{llll}
+\toprule
+Algorithm & Task & Estimated Value & Error \\
+\midrule
+Bloom Filter & Membership testing & 74 / 1000 false positives & 0.074 FP rate \\
+Flajolet-Martin & Distinct users & 32768 & 0.2081 \\
+AMS Estimator & Second moment & 66564 & 0.7646 \\
+\bottomrule
+\end{tabular}
+\caption{Summary of approximate stream-analysis results.}
+\label{tab:results}
+\end{table}
+
+\section{Scalability Discussion}
+
+One of the main advantages of stream algorithms is that they avoid storing the full dataset in memory.
+
+Exact approaches such as storing all users in a set, storing all article IDs in a set, or building full frequency tables require memory that grows with the number of distinct elements in the data.
+
+The approximate methods used in this project are more scalable:
+\begin{itemize}
+    \item \textbf{Bloom filter:} memory depends mainly on the bit-array size, not directly on the number of stream elements.
+    \item \textbf{Flajolet-Martin:} memory depends on the number of hash functions and stored counters.
+    \item \textbf{AMS:} memory depends on the number of counters and random sign mappings.
+\end{itemize}
+
+These methods are attractive for large-scale data streams because they process elements incrementally and avoid storing the full stream.
+
+This notebook runs in sampled mode by default for reproducibility and runtime control, but the same streaming logic can be extended to larger subsets and, in principle, to the full dataset.
+
+\section{Conclusion}
+
+This project implemented three stream-analysis algorithms from scratch on the New York Times comments dataset: a Bloom filter, a Flajolet-Martin distinct counter, and an AMS second-moment estimator.
+
+The experiments show that approximate stream methods can produce useful results with limited memory, but their accuracy depends on both the algorithm and the parameter settings. Among the tested methods, the Bloom filter gave the most stable practical performance, while Flajolet-Martin provided a reasonable distinct-count estimate. The AMS estimator was less stable, highlighting the importance of empirical evaluation when using approximate streaming methods.
+
+\end{document}
